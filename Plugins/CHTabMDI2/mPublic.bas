@@ -9,12 +9,12 @@ Public Enum enWinVersion
     enWinXP = 5
 End Enum
 
-Function LoWord(lDWord As Long) As Integer
+Function LowWord(lDWord As Long) As Integer
 
     If lDWord And &H8000& Then
-        LoWord = lDWord Or &HFFFF0000
+        LowWord = lDWord Or &HFFFF0000
     Else
-        LoWord = lDWord And &HFFFF&
+        LowWord = lDWord And &HFFFF&
     End If
 
 End Function
@@ -70,10 +70,10 @@ Function GetOSVersion() As enWinVersion
 
 End Function
 
-Public Function MakeDWord(ByVal LoWord As Integer, ByVal HiWord As Integer) As Long
+Public Function MakeDWord(ByVal LowWord As Integer, ByVal HiWord As Integer) As Long
 ' by Karl E. Peterson, http://www.mvps.org/vb, 20001207
   ' High word is coerced to Long to allow it to
   ' overflow limits of multiplication which shifts
   ' it left.
-  MakeDWord = (CLng(HiWord) * &H10000) Or (LoWord And &HFFFF&)
+  MakeDWord = (CLng(HiWord) * &H10000) Or (LowWord And &HFFFF&)
 End Function

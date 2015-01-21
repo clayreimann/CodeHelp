@@ -40,8 +40,8 @@ Private toolWindow      As Window
 Private docWindow       As DockWindow
 Private m_Enabled       As Boolean
 
-Private WithEvents tabMgr       As TabManager
-Attribute tabMgr.VB_VarHelpID = -1
+Private WithEvents m_tabManager       As TabManager
+Attribute m_tabManager.VB_VarHelpID = -1
 Private m_hWnd                  As Long
 Private m_DockedPanels()        As PanelStateStruct
 Private m_PanelCount            As Long
@@ -121,7 +121,7 @@ Private Sub ICHPlugin_OnDisconnect(ByVal RemoveMode As CodeHelpDef.ext_Disconnec
             
             toolWindow.Visible = False
             
-            tabMgr.RemoveAll False
+            m_tabManager.RemoveAll False
             
             Set dsr = GetCHCore(m_lPtr)
             
@@ -176,7 +176,7 @@ Private Sub ICHPlugin_OnWinProc(ByVal hWnd As Long, _
             lReturn = OnNCHittest(lParam)
             
         Case WM_ACTIVATE
-            tabMgr.RequestRedraw
+            m_tabManager.RequestRedraw
             
         Case WM_WINDOWPOSCHANGING
             'don't let VB reshow the old floating palette
@@ -204,16 +204,11 @@ Private Sub ICHPlugin_OnWinProc(ByVal hWnd As Long, _
     End Select
     Exit Sub
 ERR_HANDLER:
-    tabMgr.LockUpdateRequest False, True
+    m_tabManager.LockUpdateRequest False, True
 End Sub
 
-Private Sub ICHPlugin_OnWinProcHook(ByVal hWnd As Long, _
-                                    ByVal uMsg As Long, _
-                                    ByVal wParam As Long, _
-                                    ByVal lParam As Long, _
-                                    bHandled As Boolean, _
-                                    placeSubclass As Boolean, _
-                                    before As Boolean)
+Private Sub ICHPlugin_OnWinProcHook(ByVal hWnd As Long, ByVal uMsg As Long, ByVal wParam As Long, ByVal lParam As Long, _
+                                    bHandled As Boolean, placeSubclass As Boolean, before As Boolean)
     'Hook msg goes here
     Dim bProcess As Boolean, i As Long
     Dim item As TabItem
@@ -227,7 +222,7 @@ Private Sub ICHPlugin_OnWinProcHook(ByVal hWnd As Long, _
             
         Case WM_NCPAINT
             If hWnd <> m_hWnd Then Exit Sub
-            tabMgr.RequestRedraw
+            m_tabManager.RequestRedraw
         
         Case WM_WINDOWPOSCHANGED
             OnWindowPosChanged hWnd, lParam
@@ -259,10 +254,10 @@ Private Sub ICHPlugin_OnWinProcHook(ByVal hWnd As Long, _
                     End If
                 Next
                 If bProcess Then
-                    For Each item In tabMgr.Items
-                        If CLng(item.Tag) = hWnd Then
+                    For Each item In m_tabManager.Items
+                        If CLng(item.ChildhWnd) = hWnd Then
                             item.Selected = True
-                            tabMgr_ItemClick item
+                            m_tabManager_ItemClick item
                             Exit For
                         End If
                     Next
@@ -284,24 +279,24 @@ Private Sub ICHPlugin_OnWinProcHook(ByVal hWnd As Long, _
             Select Case uMsg
 
                 Case WM_NCLBUTTONDOWN
-                    tabMgr.OnLMouseDown tPt.x, tPt.y
+                    m_tabManager.OnLMouseDown tPt.x, tPt.y
                 
                 Case WM_NCMOUSEMOVE
                     If GetAsyncKeyState(VK_LBUTTON) Then
                         Button = vbLeftButton
                     End If
 
-                    tabMgr.OnMouseMove Button, tPt.x, tPt.y
+                    m_tabManager.OnMouseMove Button, tPt.x, tPt.y
 
                 Case WM_NCLBUTTONUP
-                    tabMgr.OnMouseUp vbLeftButton, tPt.x, tPt.y
+                    m_tabManager.OnMouseUp vbLeftButton, tPt.x, tPt.y
                     
                 Case WM_NCRBUTTONUP
-                    tabMgr.OnMouseUp vbRightButton, tPt.x, tPt.y
+                    m_tabManager.OnMouseUp vbRightButton, tPt.x, tPt.y
                     
                 Case WM_NCLBUTTONDBLCLK 'treat double click as one click
-                    tabMgr.OnLMouseDown tPt.x, tPt.y
-                    tabMgr.OnMouseUp vbLeftButton, tPt.x, tPt.y
+                    m_tabManager.OnLMouseDown tPt.x, tPt.y
+                    m_tabManager.OnMouseUp vbLeftButton, tPt.x, tPt.y
                     
             End Select
     End Select
@@ -322,7 +317,7 @@ End Property
 
 Private Sub Initialize(ByVal dsr As ICHCore)
     
-    Set tabMgr = New TabManager
+    Set m_tabManager = New TabManager
     
     Set dsr = GetCHCore(m_lPtr)
         
@@ -330,20 +325,20 @@ Private Sub Initialize(ByVal dsr As ICHCore)
     DockVBAWindow dsr, LOCALS
     DockVBAWindow dsr, IMMED
     
-    tabMgr.InsertItem TASK_LIST
+    m_tabManager.InsertItem TASK_LIST
     
     SetWindowPos m_hWnd, 0, 0, 0, 0, 0, SWP_NOSIZE Or SWP_NOMOVE Or _
         SWP_NOZORDER Or SWP_NOACTIVATE Or SWP_FRAMECHANGED
 End Sub
 
 Private Sub Terminate()
-    Set tabMgr = Nothing
+    Set m_tabManager = Nothing
 End Sub
 
 Private Sub OnNCCalcSize(ByRef lParam As Long)
     Dim tNC As NCCALCSIZE_PARAMS
     
-    'm_bShowTabStrip = tabMgr.IsAnyVisibleItem
+    'm_bShowTabStrip = m_tabManager.IsAnyVisibleItem
     
     CopyMemory tNC, ByVal lParam, Len(tNC)
 '    InflateRect tNC.rgrc(0), 1, 1
@@ -365,7 +360,7 @@ Private Sub MoveTabStrip()
     GetWindowRect m_hWnd, tR
     lWidth = tR.Right - tR.Left
 
-    tabMgr.Move 0&, 0&, lWidth, TAB_HEIGHT
+    m_tabManager.Move 0&, 0&, lWidth, TAB_HEIGHT
     
     If m_PanelCount > 0 Then
         For i = 0 To m_PanelCount - 1
@@ -379,45 +374,45 @@ End Sub
 
 Private Function OnNCHittest(ByVal lParam As Long) As Long
     Dim tPt As POINTAPI
-    tPt.x = LoWord(lParam): tPt.y = HiWord(lParam)
+    tPt.x = LowWord(lParam): tPt.y = HiWord(lParam)
     MapWindowPoints 0, m_hWnd, tPt, 1
     
     If tPt.y < 0 Then
         OnNCHittest = HTBORDER
     Else
-        tabMgr.OnMouseLeave
+        m_tabManager.OnMouseLeave
     End If
 
 End Function
 
-Private Sub tabMgr_DrawFinished(ByVal hdc As Long)
+Private Sub m_tabManager_DrawFinished(ByVal hdc As Long)
     ReleaseDC m_hWnd, hdc
 End Sub
 
-Private Sub tabMgr_ItemChanging(ByVal toItem As TabItem, Cancel As Boolean)
+Private Sub m_tabManager_ItemChanging(ByVal toItem As TabItem, Cancel As Boolean)
     Dim item As TabItem
-    Dim childHwnd As Long
+    Dim ChildhWnd As Long
     
-    Set item = tabMgr.SelectedItem
+    Set item = m_tabManager.SelectedItem
     If Not item Is Nothing Then
         If item.Caption = TASK_LIST Then
-            childHwnd = docWindow.RealhWnd
+            ChildhWnd = docWindow.RealhWnd
         Else
-            childHwnd = item.Tag
+            ChildhWnd = item.ChildhWnd
         End If
-        ShowWindow childHwnd, SW_HIDE
+        ShowWindow ChildhWnd, SW_HIDE
     End If
 End Sub
 
-Private Sub tabMgr_ItemClick(ByVal item As TabItem)
+Private Sub m_tabManager_ItemClick(ByVal item As TabItem)
     If item.Caption = TASK_LIST Then
         ShowWindow docWindow.RealhWnd, SW_SHOW
     Else
-        ShowWindow CLng(item.Tag), SW_SHOW
+        ShowWindow CLng(item.ChildhWnd), SW_SHOW
     End If
 End Sub
 
-Private Sub tabMgr_RequestRedraw(hdc As Long)
+Private Sub m_tabManager_RequestRedraw(hdc As Long)
     hdc = GetWindowDC(m_hWnd)
     SetBkMode hdc, TRANSPARENT
 End Sub
@@ -483,8 +478,8 @@ Private Sub DockVBAWindow(ByVal dsr As ICHCore, ByVal winName As String) 'As Lon
     panelState.VbahWnd = A_FindWindowEx(dsr.VBE.MainWindow.hWnd, 0, VBA_WIN, winName)
     
     If panelState.VbahWnd <> 0 Then
-        For Each item In tabMgr.Items
-            If CLng(item.Tag) = panelState.VbahWnd Then
+        For Each item In m_tabManager.Items
+            If CLng(item.ChildhWnd) = panelState.VbahWnd Then
                 If IsChild(m_hWnd, panelState.VbahWnd) Then
                     Exit Sub
                 Else
@@ -518,8 +513,8 @@ Private Sub DockVBAWindow(ByVal dsr As ICHCore, ByVal winName As String) 'As Lon
         
     If panelState.VbahWnd <> 0 Then
         bNeedReDocked = False
-        For Each item In tabMgr.Items
-            If CLng(item.Tag) = panelState.VbahWnd Then
+        For Each item In m_tabManager.Items
+            If CLng(item.ChildhWnd) = panelState.VbahWnd Then
                 If IsChild(m_hWnd, panelState.VbahWnd) Then
                     Exit Sub
                 Else
@@ -536,6 +531,7 @@ Private Sub DockVBAWindow(ByVal dsr As ICHCore, ByVal winName As String) 'As Lon
         End If
         toolWindow.Visible = True
         m_hWnd = docWindow.hWnd
+        
 
         SetParent panelState.VbahWnd, m_hWnd
         panelState.Caption = winName
@@ -543,8 +539,8 @@ Private Sub DockVBAWindow(ByVal dsr As ICHCore, ByVal winName As String) 'As Lon
         ShowWindow panelState.ParenthWnd, SW_HIDE
 
         If Not bNeedReDocked Then
-            Set item = tabMgr.InsertItem(winName, , , vbaWin.Visible)
-            item.Tag = panelState.VbahWnd
+            Set item = m_tabManager.InsertItem(winName, , , vbaWin.Visible)
+            item.ChildhWnd = panelState.VbahWnd
             
             If item.Visible Then item.Selected = True
             
@@ -564,14 +560,14 @@ Private Sub DockVBAWindow(ByVal dsr As ICHCore, ByVal winName As String) 'As Lon
 End Sub
 
 Private Function GetMousePos(ByVal lParam As Long) As POINTAPI
-    GetMousePos.x = LoWord(lParam)
+    GetMousePos.x = LowWord(lParam)
     GetMousePos.y = HiWord(lParam)
     
     'MapWindowPoints HWND_DESKTOP, m_hMDIClient, GetMousePos, 1
     MapWindowPoints 0, m_hWnd, GetMousePos, 1
     
     GetMousePos.x = GetMousePos.x + 1&
-    GetMousePos.y = GetMousePos.y + tabMgr.Height
+    GetMousePos.y = GetMousePos.y + m_tabManager.Height
 End Function
 
 Private Sub OnWindowPosChanging(ByVal hWnd As Long, ByVal lParam As Long)

@@ -6,6 +6,7 @@
 *.DCA
 *.IDL
 *.tmp
+*.vbd
 CHCore/bin/
 
 # Windows image file caches
