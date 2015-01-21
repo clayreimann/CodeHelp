@@ -100,6 +100,7 @@ Private Sub ICHPlugin_OnDisconnect(ByVal RemoveMode As CodeHelpDef.ext_Disconnec
     Call EndMonitor
 End Sub
 
+' This is where we ctrl-switch tabs
 Private Sub ICHPlugin_OnKeyHook(bHandled As Boolean, lReturn As Long, wParam As Long, lParam As Long)
     ' Call into VBWinApi to get the control key state
     CtrlDown = GetAsyncKeyState(vbKeyControl)

@@ -6,7 +6,7 @@ BEGIN
   DataSourceBehavior  = 0  'vbNone
   MTSTransactionMode  = 0  'NotAnMTSObject
 END
-Attribute VB_Name = "ReadOnlyColl"
+Attribute VB_Name = "SafeCollection"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
@@ -21,14 +21,14 @@ Private m_Col As Collection
 
 Friend Sub AddItem(ByVal newObject As Object, ByVal key As String, Optional Index As Long = 0)
     If Index > 0 And Index <= m_Col.Count Then
-        m_Col.Add newObject, key, Index
+        Call m_Col.Add(newObject, key, Index)
     Else
-        m_Col.Add newObject, key
+        Call m_Col.Add(newObject, key)
     End If
 End Sub
 
 Friend Sub Remove(ByVal key As String)
-  If Exists(key) Then m_Col.Remove key
+  If Exists(key) Then Call m_Col.Remove(key)
 End Sub
 
 Public Property Get item(vntIndexKey As Variant) As Object
@@ -55,8 +55,9 @@ Function Exists(ByVal key As String) As Boolean
   Exists = True
   Set childItem = Nothing
   
+  Exit Function
 ERR_HANDLER:
-  
+  Exists = False
 End Function
 
 Private Sub Class_Initialize()

@@ -1,8 +1,8 @@
 Type=OleDll
-Reference=*\G{00020430-0000-0000-C000-000000000046}#2.0#0#..\..\..\..\..\..\Windows\SysWOW64\stdole2.tlb#OLE Automation
+Reference=*\G{00020430-0000-0000-C000-000000000046}#2.0#0#..\..\..\..\..\..\..\Windows\SysWOW64\stdole2.tlb#OLE Automation
 Reference=*\G{D4575622-4160-4FBE-8206-C7EF39D9E8B6}#1.1#0#..\..\Interfaces\WinApiForVb.tlb #WinApi For VB type library
 Reference=*\G{56A386D8-9525-4D57-854D-12FCFB26509D}#1.0#0#..\..\Interfaces\chlib.tlb #@ CodeHelp Global Object & Interface Definitions
-Reference=*\G{F1DB0540-8DE8-46E0-B054-4414D0FE0148}#1.0#0#..\..\CHGlobalLib\CHGlobalLib.dll# CodeHelp Global Object
+Reference=*\G{F1DB0540-8DE8-46E0-B054-4414D0FE0148}#1.0#0#..\..\CHCore\bin\CHGlobalLib.dll# CodeHelp Global Object
 Class=Loader; Loader.cls
 Form=frmProperties.frm
 Startup="(None)"
