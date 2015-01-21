@@ -1,3 +1,13 @@
+# Binary files
+*.dll
+*.lib
+*.exp
+*.vbw
+*.DCA
+*.IDL
+*.tmp
+CHCore/bin/
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db

@@ -1,0 +1,5 @@
+VBGROUP 5.0
+StartupProject=CHCore\CHCore.vbp
+Project=CHGlobalLib\CHGlobalLib.vbp
+Project=Plugins\CHTabMDI2\CHTabMDI.vbp
+Project=Plugins\CHMWheel\CHMWheel.vbp

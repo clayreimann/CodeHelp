@@ -1,0 +1,61 @@
+Type=OleDll
+Reference=*\G{00020430-0000-0000-C000-000000000046}#2.0#0#..\..\..\..\..\Windows\SysWOW64\stdole2.tlb#OLE Automation
+Reference=*\G{2DF8D04C-5BFA-101B-BDE5-00AA0044DE52}#2.0#0#..\..\..\..\..\Program Files (x86)\Common Files\Microsoft Shared\OFFICE15\MSO.DLL#Microsoft Office 8.0 Object Library
+Reference=*\G{AC0714F2-3D04-11D1-AE7D-00A0C90F26F4}#1.0#0#..\..\..\..\..\Program Files (x86)\Common Files\Designer\MSADDNDR.DLL#Add-In Designer/Instance Control Library
+Reference=*\G{EF404E00-EDA6-101A-8DAF-00DD010F7EBB}#5.3#0#..\..\..\..\..\Program Files (x86)\Microsoft Visual Studio\VB98\VB6EXT.OLB#Microsoft Visual Basic 6.0 Extensibility
+Reference=*\G{8B217740-717D-11CE-AB5B-D41203C10000}#1.0#0#..\..\..\..\..\windows\SysWow64\TLBINF32.DLL#TypeLib Information
+Reference=*\G{D4575622-4160-4FBE-8206-C7EF39D9E8B6}#1.1#0#..\Interfaces\WinApiForVb.tlb #WinApi For VB type library
+Reference=*\G{56A386D8-9525-4D57-854D-12FCFB26509D}#1.0#0#..\Interfaces\chlib.tlb #@ CodeHelp Global Object & Interface Definitions
+Reference=*\G{F1DB0540-8DE8-46E0-B054-4414D0FE0148}#1.0#0#..\CHGlobalLib\CHGlobalLib.dll# CodeHelp Global Object
+Form=frmAbout.frm
+Designer=Connect.Dsr
+Class=IHook; IHook.cls
+Class=HookGate; HookGate.cls
+Class=HookMonitor; HookMonitor.cls
+Class=ISubclass; isubclass.cls
+Class=cHook; cHook.cls
+Module=mCHCore; mCHCore.bas
+Class=Plugins; Plugins.cls
+Form=frmSplash.frm
+Form=frmPlugins.frm
+Class=cSubclass; cSubclass.cls
+Startup="(None)"
+HelpFile=""
+Title="CHCore"
+ExeName32="CHCore.dll"
+Command32=""
+Name="CHCore"
+HelpContextID="0"
+Description="CodeHelp Core IDE Framework"
+CompatibleMode="0"
+CompatibleEXE32="CHCore.dll"
+MajorVer=2
+MinorVer=2
+RevisionVer=0
+AutoIncrementVer=0
+ServerSupportFiles=0
+VersionCompanyName="luthv@yahoo.com"
+VersionProductName="CodeHelp Core"
+CondComp="IN_ADDIN = 1"
+CompilationType=0
+OptimizationType=0
+FavorPentiumPro(tm)=0
+CodeViewDebugInfo=0
+NoAliasing=-1
+BoundsCheck=-1
+OverflowCheck=-1
+FlPointCheck=-1
+FDIVCheck=-1
+UnroundedFP=-1
+StartMode=1
+Unattended=0
+Retained=0
+ThreadPerObject=0
+MaxNumberOfThreads=1
+DebugStartupOption=0
+
+[MS Transaction Server]
+AutoRefresh=1
+
+[CodeSMART]
+Task_UID=16_09_05_20_06_46
