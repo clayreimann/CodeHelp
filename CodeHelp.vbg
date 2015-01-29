@@ -3,3 +3,5 @@ StartupProject=CHCore\CHCore.vbp
 Project=CHGlobalLib\CHGlobalLib.vbp
 Project=Plugins\CHTabMDI2\CHTabMDI.vbp
 Project=Plugins\CHMWheel\CHMWheel.vbp
+Project=Plugins\CHCodeComplexity\CHCodeComplexity.vbp
+Project=Plugins\CHFullScreen\CHFullScreen.vbp

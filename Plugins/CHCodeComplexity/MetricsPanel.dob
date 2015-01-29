@@ -1,0 +1,173 @@
+VERSION 5.00
+Object = "{5E9E78A0-531B-11CF-91F6-C2863C385E30}#1.0#0"; "msflxgrd.ocx"
+Begin VB.UserDocument MetricsPanel 
+   ClientHeight    =   2160
+   ClientLeft      =   0
+   ClientTop       =   0
+   ClientWidth     =   6480
+   HScrollSmallChange=   225
+   ScaleHeight     =   2160
+   ScaleWidth      =   6480
+   ScrollBars      =   0  'None
+   VScrollSmallChange=   225
+   Begin VB.CommandButton btnUpdate 
+      Caption         =   "Update"
+      Height          =   315
+      Left            =   3960
+      TabIndex        =   1
+      Top             =   0
+      Width           =   2535
+   End
+   Begin MSFlexGridLib.MSFlexGrid MetricsGrid 
+      Height          =   1815
+      Left            =   0
+      TabIndex        =   0
+      Top             =   360
+      Width           =   6495
+      _ExtentX        =   11456
+      _ExtentY        =   3201
+      _Version        =   393216
+      Rows            =   5
+      Cols            =   4
+      BackColorBkg    =   -2147483633
+      FocusRect       =   0
+      HighLight       =   2
+      GridLinesFixed  =   1
+      ScrollBars      =   2
+      SelectionMode   =   2
+      AllowUserResizing=   1
+      BorderStyle     =   0
+      Appearance      =   0
+      BeginProperty Font {0BE35203-8F91-11CE-9DE3-00AA004BB851} 
+         Name            =   "Tahoma"
+         Size            =   8.25
+         Charset         =   0
+         Weight          =   400
+         Underline       =   0   'False
+         Italic          =   0   'False
+         Strikethrough   =   0   'False
+      EndProperty
+   End
+End
+Attribute VB_Name = "MetricsPanel"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = True
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = True
+Option Explicit
+
+Private m_IDE As VBE
+Private m_lMetricColWidth As Long
+Private m_Analyzer As CodeAnalysis.VBFileAnalyzer
+
+Public Sub Initalize(IDE As VBE)
+    Set m_IDE = IDE
+End Sub
+
+Private Sub btnUpdate_Click()
+    Call UpdateCodeMetrics
+End Sub
+
+Private Sub UserDocument_Initialize()
+    Dim lRow As Long
+    Dim sMethodName As String
+    
+    m_lMetricColWidth = MetricsGrid.ColWidth(0)
+    Set m_Analyzer = New CodeAnalysis.VBFileAnalyzer
+
+    With MetricsGrid
+        .Rows = 1
+        .Row = 0
+        .Col = 0
+        .Text = "Method"
+
+        .Col = 1
+        .Text = "Nesting"
+        .CellAlignment = flexAlignRightCenter
+
+        .Col = 2
+        .Text = "CC"
+        .CellAlignment = flexAlignRightCenter
+
+        .Col = 3
+        .Text = "CFC"
+        .CellAlignment = flexAlignRightCenter
+
+    End With
+End Sub
+
+
+
+Public Sub UpdateCodeMetrics()
+    Dim lRow As Long
+    Dim sMethodName As String
+    Dim oActive As CodeModule
+    
+    Set oActive = m_IDE.ActiveCodePane.CodeModule
+    If oActive Is Nothing Then Exit Sub
+    
+    Call m_Analyzer.analyzeFileText(oActive.Lines(1, oActive.CountOfLines))
+
+    With MetricsGrid
+        .Rows = 1 + m_Analyzer.numberOfMethods
+        For lRow = 1 To .Rows - 1
+            .Row = lRow
+            sMethodName = m_Analyzer.methodNameForIndex(lRow)
+            
+            .Col = 0
+            .Text = sMethodName
+            
+            .Col = 1
+            .Text = m_Analyzer.nestingDepthForMethod(sMethodName)
+            
+            .Col = 2
+            .Text = m_Analyzer.cyclomaticComplexityForMethod(sMethodName)
+            
+            .Col = 3
+            .Text = m_Analyzer.codeFlowComplexityForMethod(sMethodName)
+        Next
+    End With
+End Sub
+
+Private Sub UserDocument_Resize()
+    Call Resize
+    'Call UpdateCodeMetrics
+End Sub
+
+Private Sub UserDocument_Show()
+    Call Resize
+End Sub
+
+Private Sub Resize()
+    Const TOP_HEIGHT = 300
+    Const PADDING = 30
+    Dim lWidthNoSB  As Long
+    Dim lFuncWidth  As Long
+    
+    If UserDocument.Width > 0 Then
+'        cboSelect.Top = 0
+'        cboSelect.Left = 0
+'        cboSelect.Width = UserDocument.Width * 0.75
+
+        btnUpdate.Top = 0
+        btnUpdate.Left = 0
+        btnUpdate.Width = UserDocument.Width
+        btnUpdate.Height = TOP_HEIGHT
+    
+        MetricsGrid.Top = TOP_HEIGHT + PADDING
+        MetricsGrid.Left = 0
+        MetricsGrid.Width = UserDocument.Width
+        MetricsGrid.Height = UserDocument.Height - MetricsGrid.Top
+        
+        lWidthNoSB = UserDocument.ScaleWidth - 240
+        lFuncWidth = lWidthNoSB * (2 / 3)
+        If lFuncWidth < 1 Then
+            Exit Sub
+        End If
+        
+        MetricsGrid.ColWidth(0) = lFuncWidth
+        MetricsGrid.ColWidth(1) = (lWidthNoSB - lFuncWidth) / 2
+        MetricsGrid.ColWidth(2) = MetricsGrid.ColWidth(1) / 2
+        MetricsGrid.ColWidth(3) = MetricsGrid.ColWidth(1) / 2
+    End If
+End Sub
