@@ -91,9 +91,9 @@ Private Sub ICHPlugin_OnConnection(ByVal ConnectMode As CodeHelpDef.ext_ConnectM
     
     Set CHCore = GetCHCore(m_CHCorePtr)
     m_hWndMain = CHCore.VBE.MainWindow.hWnd
-    Set CHCore = Nothing
-    
     Call StartMonitor(ConnectMode = ext_cm_AfterStartup)
+    
+    Set CHCore = Nothing
 End Sub
 
 Private Sub ICHPlugin_OnDisconnect(ByVal RemoveMode As CodeHelpDef.ext_DisconnectMode, custom() As Variant)
