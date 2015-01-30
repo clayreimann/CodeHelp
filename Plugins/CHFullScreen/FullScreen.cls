@@ -254,6 +254,10 @@ Private Sub ICHPlugin_OnWinProc(ByVal hWnd As Long, ByVal uMsg As Long, wParam A
 
 End Sub
 
+Private Sub ICHPlugin_OnWinProc(ByVal hWnd As Long, ByVal uMsg As Long, wParam As Long, lParam As Long, _
+                                bHandled As Boolean, lReturn As Long)
+End Sub
+
 Private Sub ICHPlugin_ShowHelp()
 
 End Sub

@@ -91,11 +91,22 @@ Private Sub ICHPlugin_OnConnection(ByVal ConnectMode As CodeHelpDef.ext_ConnectM
 End Sub
 
 Private Sub ICHPlugin_OnDisconnect(ByVal RemoveMode As CodeHelpDef.ext_DisconnectMode, custom() As Variant)
-    'Do your clean up here
+    'Do your clean up here'
 End Sub
 
+' for a discussion of wParam and lParam see https://msdn.microsoft.com/en-us/library/windows/desktop/ms644984(v=vs.85).aspx
 Private Sub ICHPlugin_OnKeyHook(bHandled As Boolean, lReturn As Long, wParam As Long, lParam As Long)
-    'do any keyboard related code here
+    Select Case wParam
+        Case vbKeyM
+            If (lParam And &HC0000000) = 0 Then ' check for key down messages only
+                If GetAsyncKeyState(vbKeyControl) Then
+                    lReturn = 1
+                    bHandled = True
+                    Call m_MetricsPanel.UpdateCodeMetrics
+                End If
+            End If
+            
+    End Select
 End Sub
 
 Private Sub ICHPlugin_OnWinProc(ByVal hWnd As Long, ByVal uMsg As Long, wParam As Long, lParam As Long, _

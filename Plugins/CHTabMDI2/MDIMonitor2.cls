@@ -109,6 +109,10 @@ Private Sub ICHPlugin_OnKeyHook(bHandled As Boolean, lReturn As Long, wParam As 
         Select Case wParam
             Case vbKey0 To vbKey9
                 Call m_tabManager.ShortcutActivate(wParam)
+            
+            Case vbKeyReturn
+                Call MaximizeCodePane
+                
         End Select
     End If
 End Sub
@@ -588,3 +592,17 @@ Private Property Let CtrlDown(ByVal Value As Boolean)
         m_tabManager.ShowShortcut = Value
     End If
 End Property
+
+Private Sub MaximizeCodePane()
+    Dim oCHCore As ICHCore
+    Dim oVBE As VBE
+    
+    Set oCHCore = GetCHCore(m_CHCorePtr)
+    Set oVBE = oCHCore.VBE
+    
+    oVBE.ActiveCodePane.Window.WindowState = vbext_ws_Maximize
+    
+    Set oCHCore = Nothing
+    Set oVBE = Nothing
+End Sub
+

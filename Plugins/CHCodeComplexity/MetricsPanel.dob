@@ -34,7 +34,7 @@ Begin VB.UserDocument MetricsPanel
       HighLight       =   2
       GridLinesFixed  =   1
       ScrollBars      =   2
-      SelectionMode   =   2
+      SelectionMode   =   1
       AllowUserResizing=   1
       BorderStyle     =   0
       Appearance      =   0
