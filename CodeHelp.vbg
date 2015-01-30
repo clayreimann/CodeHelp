@@ -5,3 +5,4 @@ Project=Plugins\CHTabMDI2\CHTabMDI.vbp
 Project=Plugins\CHMWheel\CHMWheel.vbp
 Project=Plugins\CHCodeComplexity\CHCodeComplexity.vbp
 Project=Plugins\CHFullScreen\CHFullScreen.vbp
+Project=Plugins\CHCoder\CHCoder.vbp
