@@ -2,12 +2,12 @@ Type=OleDll
 Reference=*\G{00020430-0000-0000-C000-000000000046}#2.0#0#..\..\..\..\..\..\..\Windows\SysWOW64\stdole2.tlb#OLE Automation
 Reference=*\G{EF404E00-EDA6-101A-8DAF-00DD010F7EBB}#5.3#0#..\..\..\..\..\..\..\Program Files (x86)\Microsoft Visual Studio\VB98\VB6EXT.OLB#Microsoft Visual Basic 6.0 Extensibility
 Reference=*\G{56A386D8-9525-4D57-854D-12FCFB26509D}#1.0#0#..\..\Interfaces\chlib.tlb # CodeHelp Interface Definitions
-Reference=*\G{68846601-810F-43A9-A491-3D2F1DD696B7}#1.0#0#..\..\CHGlobalLib\CHGlobalLib.dll# CodeHelp Global Object
 Reference=*\G{D4575622-4160-4FBE-8206-C7EF39D9E8B6}#1.1#0#..\..\Interfaces\WinApiForVb.tlb #WinApi For VB type library
 Reference=*\G{00000201-0000-0010-8000-00AA006D2EA4}#2.1#0#..\..\..\..\..\..\..\Program Files (x86)\Common Files\System\ado\msado21.tlb#Microsoft ActiveX Data Objects 2.1 Library
+Reference=*\G{C6E13AD1-712F-4C7F-A25B-5AB45FB8371E}#1.0#0#..\..\CHCore\bin\CHGlobalLib.dll# CodeHelp Global Object
+Reference=*\G{2DF8D04C-5BFA-101B-BDE5-00AA0044DE52}#2.7#0#..\..\..\..\..\..\..\Program Files (x86)\Common Files\Microsoft Shared\OFFICE15\MSO.DLL#Microsoft Office 15.0 Object Library
 Class=Loader; Loader.cls
 Form=frmProp.frm
-Module=mMain; mMain.bas
 Startup="(None)"
 HelpFile=""
 Title="CHCoder"
@@ -42,6 +42,7 @@ Retained=0
 ThreadPerObject=0
 MaxNumberOfThreads=1
 ThreadingModel=1
+DebugStartupOption=0
 
 [MS Transaction Server]
 AutoRefresh=1

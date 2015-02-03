@@ -20,17 +20,101 @@ Private Const CH_COPYRIGHT As String = "luthv@yahoo.com"
 
 Private Const VBA_WIN As String = "VbaWindow"
 
-Private m_lPtr As Long
-Private m_bEnabled As Boolean
+Private m_CHCorePtr As Long
+Private m_IsEnabled As Boolean
+Private m_CodeWinFocused As Boolean
 
-Dim bMonitor As Boolean
-Dim ActiveCodePane As CodePane
+Private m_MenuItem As CommandBarControl
+Private WithEvents m_oMenuEvents As VBIDE.CommandBarEvents
+Attribute m_oMenuEvents.VB_VarHelpID = -1
+
+Private m_TemplateDataSet As Recordset
+Private m_MarkerDataSet As Recordset
+Private m_sConnection As String
 
 Implements ICHPlugin
 
+Private Sub Class_Initialize()
+    Call InitData
+    
+    Set m_TemplateDataSet = OpenData("SELECT * FROM Snippet ORDER BY key")
+    Set m_MarkerDataSet = OpenData("SELECT * FROM Marker")
+    
+End Sub
+
+Private Sub Class_Terminate()
+    Call CloseData
+End Sub
+
+Private Sub InitData()
+    m_sConnection = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" & App.Path & "\code_templates.mdb;"
+End Sub
+
+Private Function GetConnection() As Connection
+    Set GetConnection = New Connection
+    GetConnection.ConnectionString = m_sConnection
+    Call GetConnection.Open
+End Function
+
+Private Function GetRecordSet() As Recordset
+    Set GetRecordSet = New Recordset
+    GetRecordSet.CursorLocation = adUseClient
+    GetRecordSet.CursorType = adOpenStatic
+    GetRecordSet.LOCKTYPE = adLockBatchOptimistic
+End Function
+
+Private Function OpenData(query As String) As Recordset
+    Dim oRecords As Recordset
+    Dim oConnection As Connection
+    
+    On Error GoTo EXIT_POINT
+    Set oConnection = GetConnection
+    Set oRecords = GetRecordSet
+
+    Set oRecords.ActiveConnection = oConnection
+    Call oRecords.Open(query)
+    Set oRecords.ActiveConnection = Nothing
+
+    Set OpenData = oRecords
+    
+EXIT_POINT:
+    On Error Resume Next
+    Set oRecords.ActiveConnection = Nothing
+    
+    Call oConnection.Close
+    Set oConnection = Nothing
+    
+    If Err.Number <> 0 Then
+        Call MsgBox("Error while opening code_templates.mdb." & vbCrLf & Err.Description & vbCrLf & _
+            "Please make sure that code_templates.mdb file is placed in the same folder as CHCoder.dll", _
+            vbInformation, "CodeHelp Coder Error")
+        
+    End If
+    Err.Clear
+End Function
+
+Friend Sub SaveData()
+    Dim oConnection As Connection
+    
+    Set oConnection = GetConnection
+    Set m_TemplateDataSet.ActiveConnection = oConnection
+    Call m_TemplateDataSet.UpdateBatch
+    Set m_TemplateDataSet.ActiveConnection = Nothing
+    
+    
+    Call oConnection.Close
+    Set oConnection = Nothing
+End Sub
+
+Private Sub CloseData()
+    Set m_TemplateDataSet = Nothing
+    Set m_MarkerDataSet = Nothing
+End Sub
+
+
 Private Property Let ICHPlugin_CHCore(ByVal RHS As Long)
     'Save the Pointer for later use
-    m_lPtr = RHS
+    m_CHCorePtr = RHS
 End Property
 
 Private Property Get ICHPlugin_CopyRight() As String
@@ -41,18 +125,18 @@ Private Property Get ICHPlugin_Description() As String
     ICHPlugin_Description = CH_DESCRIPTION
 End Property
 
-Private Property Let ICHPlugin_Enabled(ByVal RHS As Boolean)
+Private Property Let ICHPlugin_Enabled(ByVal Enabled As Boolean)
 'Enable/disable this plugin in plugin manager
 'if disable the ondisconnect method will be called, and the plugin will be excluded from
 'msg processing
-   m_bEnabled = RHS
+    m_IsEnabled = Enabled
 End Property
 
 Private Property Get ICHPlugin_Enabled() As Boolean
 'Enable/disable this plugin in plugin manager
 'if disable the ondisconnect method will be called, and the plugin will be excluded from
 'msg processing
-   ICHPlugin_Enabled = m_bEnabled
+    ICHPlugin_Enabled = m_IsEnabled
 End Property
 
 Private Property Get ICHPlugin_HaveExtendedHelp() As Boolean
@@ -72,80 +156,70 @@ Private Property Get ICHPlugin_Name() As String
     ICHPlugin_Name = App.Title
 End Property
 
-Private Sub ICHPlugin_OnConnection(ByVal ConnectMode As CodeHelpDef.ext_ConnectMode, _
-                                   custom() As Variant)
-    
+Private Sub ICHPlugin_OnConnection(ByVal ConnectMode As CodeHelpDef.ext_ConnectMode, custom() As Variant)
     'Sample use of the ICHCore pointer
     'It's advisable not to save the ICHCore object itself, always use the helper function to obtain the
     'ICHCore object from the pointer
     Dim hWnd As Long
+    Dim oCHCore As ICHCore
+    Dim sMakeItWork As String
     
     hWnd = GetFocus()
     
-    OpenData
     If GetWinText(hWnd, True) = VBA_WIN Then
-        
         If InStr(1, GetWinText(hWnd), "(Code)") Then
-            bMonitor = True
+            m_CodeWinFocused = True
         End If
-        
     End If
     
-    'Do your initializing stuff here
+    Set oCHCore = CHHelper.GetCHCore(m_CHCorePtr)
+    If m_MenuItem Is Nothing Then
+        sMakeItWork = oCHCore.VBE.Name
+        Set m_MenuItem = oCHCore.AddToCodeHelpMenu("Snippets", Nothing)
+        Set m_oMenuEvents = oCHCore.VBE.Events.CommandBarEvents(m_MenuItem)
+    End If
+    
+    Set oCHCore = Nothing
 End Sub
 
-Private Sub ICHPlugin_OnDisconnect(ByVal RemoveMode As CodeHelpDef.ext_DisconnectMode, _
-                                   custom() As Variant)
-    'Do your clean up here
+Private Sub ICHPlugin_OnDisconnect(ByVal RemoveMode As CodeHelpDef.ext_DisconnectMode, custom() As Variant)
+    Call CloseData
 End Sub
 
-Private Sub ICHPlugin_OnKeyHook(bHandled As Boolean, _
-                                lreturn As Long, _
-                                wParam As Long, _
-                                lParam As Long)
-    'do any keyboard related code here
-    If bMonitor Then
+Private Function ShiftPressed() As Boolean
+ ShiftPressed = (GetKeyState(vbKeyShift) And &H8000) <> 0
+End Function
+
+Private Sub ICHPlugin_OnKeyHook(bHandled As Boolean, lReturn As Long, wParam As Long, lParam As Long)
+    If m_CodeWinFocused Then
+        If Not ShiftPressed Then Exit Sub  'ignore when the shift key is not down
         If wParam = vbKeySpace Then
-            If (lParam And &H80000000) = 0 Then 'only process keydown
-                ProcessLine
-'                    lreturn = 1
-'                    bHandled = True
+            If CHHelper.IsKeyDownEvent(lParam) Then 'only process keydown
+                If ProcessLine Then
+                    lReturn = 1
+                    bHandled = True
+                End If
             End If
         End If
     End If
 End Sub
 
-Private Sub ICHPlugin_OnWinProc(ByVal hWnd As Long, _
-                                ByVal uMsg As Long, _
-                                wParam As Long, _
-                                lParam As Long, _
-                                bHandled As Boolean, _
-                                lreturn As Long)
+Private Sub ICHPlugin_OnWinProc(ByVal hWnd As Long, ByVal uMsg As Long, wParam As Long, lParam As Long, _
+                                bHandled As Boolean, lReturn As Long)
     'subclassed message goes here
 End Sub
 
-Private Sub ICHPlugin_OnWinProcHook(ByVal hWnd As Long, _
-                                    ByVal uMsg As Long, _
-                                    ByVal wParam As Long, _
-                                    ByVal lParam As Long, _
-                                    bHandled As Boolean, _
-                                    placeSubclass As Boolean, _
-                                    before As Boolean)
+Private Sub ICHPlugin_OnWinProcHook(ByVal hWnd As Long, ByVal uMsg As Long, ByVal wParam As Long, ByVal lParam As Long, _
+                                    bHandled As Boolean, placeSubclass As Boolean, before As Boolean)
     'Hook msg goes here
-    
     Select Case uMsg
-        Case WM_SETFOCUS ', WM_CHILDACTIVATE
-            
-            bMonitor = False
-            
+        Case WM_SETFOCUS
+            m_CodeWinFocused = False
             If GetWinText(hWnd, True) = VBA_WIN Then
-                
                 If InStr(1, GetWinText(hWnd), "(Code)") Then
-                    bMonitor = True
+                    m_CodeWinFocused = True
                 End If
-                
             End If
-            
     End Select
 End Sub
 
@@ -154,16 +228,24 @@ Private Sub ICHPlugin_ShowHelp()
 End Sub
 
 Private Sub ICHPlugin_ShowPropertyDialog()
-'show property dialog when user click on properties button in plugin manager
-    Dim prop As frmProp
-    Set prop = New frmProp
-    prop.Show vbModal
-    Set prop = Nothing
+    Dim frmProperties As frmProp
+    Set frmProperties = New frmProp
+    
+    Call frmProperties.Initalize(m_TemplateDataSet, m_MarkerDataSet, Me)
+    Call frmProperties.Show(vbModal)
+    Call Unload(frmProperties)
+
+    Set frmProperties = Nothing
 End Sub
 
 Private Property Get ICHPlugin_Version() As String
     ICHPlugin_Version = App.Major & "." & App.Minor & "." & App.Revision
 End Property
+
+Private Sub m_oMenuEvents_Click(ByVal CommandBarControl As Object, handled As Boolean, CancelDefault As Boolean)
+    Call ICHPlugin_ShowPropertyDialog
+End Sub
+
 
 Private Function GetWinText(hWnd As Long, Optional className As Boolean = False) As String
     'some static vars to speed up things, this func will be called many times
@@ -183,37 +265,101 @@ Private Function GetWinText(hWnd As Long, Optional className As Boolean = False)
 End Function
 
 Private Function ProcessLine() As Boolean
-    Dim lStartLine As Long, lEndLine As Long, lStartCol As Long, lEndCol As Long
-    Dim sCodes As String
-    Dim sWords() As String
-    Dim templateLenght As Long
-    Dim sTemplate As String
+    Dim lStartLine As Long, lStartCol As Long
+    Dim lEndLine As Long, lEndCol As Long
+    Dim sLine As String, sMatch As String
+    Dim sTemplate As String, sIndent As String
+    Dim lMatchLength As Long
+    Dim oActiveCodePane As CodePane
+
+    Set oActiveCodePane = GetCHCore(m_CHCorePtr).VBE.ActiveCodePane
     
-    Set ActiveCodePane = GetCHCore(m_lPtr).VBE.ActiveCodePane
+    If m_TemplateDataSet.RecordCount < 1 Then Exit Function
+    
+    Call oActiveCodePane.GetSelection(lStartLine, lStartCol, lEndLine, lEndCol)
+    sLine = oActiveCodePane.CodeModule.Lines(lStartLine, 1)
+    
+    'parse the current line for the target
+    Do While Mid$(sLine, lStartCol, 1) <> " " And lStartCol > 1
+        lStartCol = lStartCol - 1
+    Loop
+    If Mid$(sLine, lStartCol, 1) = " " Then lStartCol = lStartCol + 1
+    Do While Mid$(sLine, lEndCol, 1) <> " " _
+            And Mid$(sLine, lEndCol, 1) <> vbCr _
+            And lEndCol < Len(sLine)
+        lEndCol = lEndCol + 1
+    Loop
+    
+    sMatch = Mid$(sLine, lStartCol, lEndCol - lStartCol)
+    lMatchLength = Len(sMatch)
+    Call m_TemplateDataSet.MoveFirst
+    Call m_TemplateDataSet.Find("Key='" & sMatch & "'")
+    
+    If m_TemplateDataSet.EOF = False Then
+        sLine = Left$(sLine, Len(sLine) - lMatchLength)
+        sTemplate = m_TemplateDataSet.Fields(1).Value
         
-    If templateData.RecordCount > 0 Then
-    
-        With ActiveCodePane
-            .GetSelection lStartLine, lStartCol, lEndLine, lEndCol
-            sCodes = .CodeModule.Lines(lStartLine, 1)
+        'match indentation when the template is multi-line
+        sIndent = vbCrLf & IndentationToMatchLine(sLine)
+        sTemplate = Replace(sTemplate, vbCrLf, sIndent)
 
-            sWords = Split(sCodes, " ")
-            sTemplate = Trim$(sWords(UBound(sWords)))
-            templateLenght = Len(sTemplate)
-
-            templateData.MoveFirst
-            templateData.Find "Key='" & sTemplate & "'"
-            
-            If templateData.EOF = False Then
-                sCodes = Left$(sCodes, Len(sCodes) - templateLenght) + _
-                    templateData.Fields(1).Value
-                .CodeModule.ReplaceLine lStartLine, sCodes
-                templateLenght = Len(sCodes) + 1
-                .SetSelection lStartLine, templateLenght, lStartLine, templateLenght
-                
-                ProcessLine = True
-            End If
-    
-        End With
+        ProcessLine = GetNewSelection(sLine, sTemplate, lStartLine, lStartCol, lEndLine, lEndCol)
+        sLine = sLine & sTemplate
+        Call oActiveCodePane.CodeModule.ReplaceLine(lStartLine, sLine)
+        Call oActiveCodePane.SetSelection(lStartLine, lStartCol, lEndLine, lEndCol)
     End If
 End Function
+
+'if GetNewSelection returns true then we don't insert a space
+Private Function GetNewSelection(sLine As String, sTemplate As String, lStartLine As Long, lStartCol As Long, _
+                                                                       lEndLine As Long, lEndCol As Long) As Boolean
+    Dim lLineLen        As Long
+    Dim lSelStart       As Long
+    Dim lSelEnd         As Long
+    
+    lSelStart = InStr(1, sTemplate, "<sel>")
+    If lSelStart = 0 Then 'if no selection is specified then just do something default
+        GetNewSelection = False
+        lStartCol = InStr(1, sTemplate, vbCrLf)
+        If lSelStart = 0 Then
+            lStartCol = Len(sLine) + Len(sTemplate) + 1 'move to just after the template
+        Else
+            lStartCol = Len(sLine) + lSelStart 'move to the end of the first line inserted
+        End If
+        lEndCol = lStartCol
+        lEndLine = lStartLine
+        
+    Else 'figure out where the selection is supposed to go
+        GetNewSelection = True
+        lSelEnd = InStr(1, sTemplate, "</>")
+        lLineLen = InStr(1, sTemplate, vbCrLf)
+        If lLineLen = 0 Then 'single line template
+            lEndLine = lStartLine
+            lStartCol = Len(sLine) + lSelStart
+            lEndCol = Len(sLine) + lSelEnd + 3 '+3 to move past the selection delim
+        Else
+            
+        End If
+        
+    End If
+End Function
+
+Private Function IndentationToMatchLine(sLine As String) As String
+    Dim sIndent As String
+    Dim lIndentLevel As Long
+    
+    lIndentLevel = 1
+    Do While Mid$(sLine, lIndentLevel, 1) = " "
+        lIndentLevel = lIndentLevel + 1
+    Loop
+    lIndentLevel = lIndentLevel - 1 'compensate for 1-based indicies
+    
+    sIndent = ""
+    Do While lIndentLevel > 0
+        sIndent = sIndent & " "
+        lIndentLevel = lIndentLevel - 1
+    Loop
+    
+    IndentationToMatchLine = sIndent
+End Function
+
