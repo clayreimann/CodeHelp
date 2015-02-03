@@ -60,6 +60,10 @@ Sub CopyIconToClipBoardAsBmp(oIcon As StdPicture, oBMP As StdPicture)
 
 End Sub
 
+Public Function IsKeyDownEvent(lParam As Long) As Boolean
+    IsKeyDownEvent = (lParam And &H80000000) = 0
+End Function
+
 Sub LogToNotePad(ByVal sMsg As String)
     'Help trace in compiled mode
     'The message will be appended to first notepad instance found
