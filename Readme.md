@@ -1,8 +1,8 @@
 # Version 3.0
 
-All code in this repository is released, with permission from Luthfi, under the MIT license
-unless otherwise noted. (For example [CHCore/CHook.cls](CHCore/CHook.cls) or
-[Plugins/CHTabMDI2/mPublic.bas](Plugins/CHTabMDI2/mPublic.bas)::MakeDWord).
+All code in this repository is released, with permission from Luthfi, under the 
+[MIT](https://tldrlegal.com/license/mit-license#summary) license unless otherwise noted. 
+(For example [CHCore/CHook.cls](CHCore/CHook.cls) or [Plugins/CHTabMDI2/mPublic.bas](Plugins/CHTabMDI2/mPublic.bas)::MakeDWord).
 An [installer](CodeHelpInstaller.exe?raw=true) is provided and can be built with [NSIS](http://nsis.sourceforge.net/) 2.46.
 
 ### Extending CodeHelp
