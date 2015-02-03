@@ -114,8 +114,9 @@ SectionEnd
 Section "Snippets"
   SetOutPath $InstDir
 
-  ; !insertmacro InstallLib RegDll NotShared NoReboot_Protected \
-  ;   CHCore\bin\Plugins\CHFullScreen.dll Plugins\CHFullScreen.dll $SYSDIR
+  !insertmacro InstallLib RegDll NotShared NoReboot_Protected \
+    CHCore\bin\Plugins\CHCoder.dll Plugins\CHCoder.dll $SYSDIR
+  File "/oname=Plugins\code_templates.mdb" CHCore\bin\Plugins\code_templates.mdb
 SectionEnd
 
 
@@ -148,6 +149,7 @@ Section "Uninstall"
   Delete "$InstDir\Plugins\CHCoder.dll"
   Delete "$InstDir\Plugins\CHComment.dll"
   Delete "$InstDir\Plugins\CHCodeComplexity.dll"
+  Delete "$InstDir\Plugins\code_templates.mdb"
   RmDir  "$InstDir\Plugins"
 
   Delete "$InstDir\3rd Party\Antlr4.Runtime.dll"
