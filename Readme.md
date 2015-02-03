@@ -8,7 +8,7 @@ An [installer](CodeHelpInstaller.exe?raw=true) is provided and can be built with
 ### Features
 ##### CHCoder
   * Autocomplete templates with Shift+Space
-  * Use <sel></> to delimit the text that should be selected after the expansion
+  * Use &lt;sel&gt;&lt;/&gt; to delimit the text that should be selected after the expansion
 
 ##### CHCodeComplexity
   * The panel displays maximum nesting level,
