@@ -57,6 +57,7 @@ Attribute VB_Exposed = True
 Option Explicit
 
 Private m_IDE As VBE
+Private m_Shown As Boolean
 Private m_lMetricColWidth As Long
 Private m_Analyzer As CodeAnalysis.VBFileAnalyzer
 
@@ -65,7 +66,7 @@ Public Sub Initalize(IDE As VBE)
 End Sub
 
 Private Sub btnUpdate_Click()
-    Call UpdateCodeMetrics
+    Call CurrentCodeMetrics
 End Sub
 
 Private Sub UserDocument_Initialize()
@@ -96,16 +97,23 @@ Private Sub UserDocument_Initialize()
     End With
 End Sub
 
-
-
-Public Sub UpdateCodeMetrics()
-    Dim lRow As Long
-    Dim sMethodName As String
+Private Sub CurrentCodeMetrics()
     Dim oActive As CodeModule
     
+    On Error Resume Next
     Set oActive = m_IDE.ActiveCodePane.CodeModule
-    If oActive Is Nothing Then Exit Sub
+    On Error GoTo 0
     
+    Call UpdateCodeMetrics(oActive)
+End Sub
+
+
+Public Sub UpdateCodeMetrics(Optional oActive As CodeModule = Nothing)
+    Dim lRow As Long
+    Dim sMethodName As String
+    
+    If oActive Is Nothing Then Exit Sub
+    If m_Analyzer Is Nothing Then Exit Sub
     Call m_Analyzer.analyzeFileText(oActive.Lines(1, oActive.CountOfLines))
 
     With MetricsGrid
@@ -131,11 +139,11 @@ End Sub
 
 Private Sub UserDocument_Resize()
     Call Resize
-    'Call UpdateCodeMetrics
 End Sub
 
 Private Sub UserDocument_Show()
     Call Resize
+    Call CurrentCodeMetrics
 End Sub
 
 Private Sub Resize()
@@ -145,10 +153,6 @@ Private Sub Resize()
     Dim lFuncWidth  As Long
     
     If UserDocument.Width > 0 Then
-'        cboSelect.Top = 0
-'        cboSelect.Left = 0
-'        cboSelect.Width = UserDocument.Width * 0.75
-
         btnUpdate.Top = 0
         btnUpdate.Left = 0
         btnUpdate.Width = UserDocument.Width

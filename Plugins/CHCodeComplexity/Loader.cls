@@ -25,6 +25,9 @@ Private m_Enabled As Boolean
 
 Private m_ToolWindow    As Window
 Private m_MetricsPanel  As MetricsPanel
+Private m_LastComponent As VBComponent
+Private WithEvents m_ComponentEvents As VBComponentsEvents
+Attribute m_ComponentEvents.VB_VarHelpID = -1
 
 Implements ICHPlugin
 
@@ -77,14 +80,12 @@ Private Sub ICHPlugin_OnConnection(ByVal ConnectMode As CodeHelpDef.ext_ConnectM
     
     Set oCHCore = GetCHCore(m_CHCorePtr)
     
-    Set oActiveWin = oCHCore.VBE.ActiveWindow
+    Set m_ComponentEvents = oCHCore.VBE.Events.VBComponentsEvents(Nothing)
     Set m_ToolWindow = oCHCore.VBE.Windows.CreateToolWindow(oCHCore.AddInInst, "CHCodeComplexity.MetricsPanel", _
                                                             "Metrics", TOOL_GUID, m_MetricsPanel)
-    On Error Resume Next
+    
     Call m_MetricsPanel.Initalize(oCHCore.VBE)
     m_ToolWindow.Visible = True
-    On Error GoTo 0
-    If Not oActiveWin Is Nothing Then Call oActiveWin.SetFocus
     
     Set oCHCore = Nothing
     Set oActiveWin = Nothing
@@ -92,6 +93,10 @@ End Sub
 
 Private Sub ICHPlugin_OnDisconnect(ByVal RemoveMode As CodeHelpDef.ext_DisconnectMode, custom() As Variant)
     'Do your clean up here'
+    Set m_LastComponent = Nothing
+    Set m_MetricsPanel = Nothing
+    Set m_ToolWindow = Nothing
+    Set m_ComponentEvents = Nothing
 End Sub
 
 ' for a discussion of wParam and lParam see https://msdn.microsoft.com/en-us/library/windows/desktop/ms644984(v=vs.85).aspx
@@ -102,7 +107,7 @@ Private Sub ICHPlugin_OnKeyHook(bHandled As Boolean, lReturn As Long, wParam As 
                 If GetAsyncKeyState(vbKeyControl) Then
                     lReturn = 1
                     bHandled = True
-                    Call m_MetricsPanel.UpdateCodeMetrics
+                    If Not m_LastComponent Is Nothing Then Call m_MetricsPanel.UpdateCodeMetrics(m_LastComponent.CodeModule)
                 End If
             End If
             
@@ -131,3 +136,16 @@ Private Property Get ICHPlugin_Version() As String
     ICHPlugin_Version = App.Major & "." & App.Minor & "." & App.Revision
 End Property
 
+Private Sub m_ComponentEvents_ItemActivated(ByVal VBComponent As VBIDE.VBComponent)
+    Set m_LastComponent = VBComponent
+    Call CalculateMetrics(VBComponent)
+End Sub
+
+Private Sub m_ComponentEvents_ItemSelected(ByVal VBComponent As VBIDE.VBComponent)
+    Set m_LastComponent = VBComponent
+    Call CalculateMetrics(VBComponent)
+End Sub
+
+Private Sub CalculateMetrics(comp As VBComponent)
+    Call m_MetricsPanel.UpdateCodeMetrics(comp.CodeModule)
+End Sub
