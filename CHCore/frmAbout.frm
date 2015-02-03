@@ -32,6 +32,27 @@ Begin VB.Form frmAbout
       Top             =   1935
       Width           =   1215
    End
+   Begin VB.Label lblGithub 
+      AutoSize        =   -1  'True
+      BackStyle       =   0  'Transparent
+      Caption         =   "GitHub"
+      BeginProperty Font 
+         Name            =   "Arial"
+         Size            =   8.25
+         Charset         =   0
+         Weight          =   400
+         Underline       =   -1  'True
+         Italic          =   0   'False
+         Strikethrough   =   0   'False
+      EndProperty
+      ForeColor       =   &H8000000D&
+      Height          =   210
+      Left            =   2160
+      MousePointer    =   4  'Icon
+      TabIndex        =   5
+      Top             =   1440
+      Width           =   480
+   End
    Begin VB.Image Image1 
       Height          =   1920
       Left            =   0
@@ -112,10 +133,24 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
 
+Private Declare Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" ( _
+        ByVal hwnd As Long, _
+        ByVal lpOperation As String, _
+        ByVal lpFile As String, _
+        ByVal lpParameters As String, _
+        ByVal lpDirectory As String, _
+        ByVal nShowCmd As Long) _
+        As Long
+
 Private Sub cmdOK_Click()
     Unload Me
 End Sub
 
 Private Sub Form_Load()
     lblVersion.Caption = App.Major & "." & App.Minor & "." & App.Revision
+End Sub
+
+Private Sub lblGithub_Click()
+    Call Clipboard.SetText("https://github.com/clayreimann/CodeHelp")
+    Call MsgBox("URL copied to clipboard")
 End Sub
