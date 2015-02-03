@@ -39,7 +39,6 @@ Private Sub Class_Initialize()
     
     Set m_TemplateDataSet = OpenData("SELECT * FROM Snippet ORDER BY key")
     Set m_MarkerDataSet = OpenData("SELECT * FROM Marker")
-    
 End Sub
 
 Private Sub Class_Terminate()
@@ -267,6 +266,7 @@ End Function
 Private Function ProcessLine() As Boolean
     Dim lStartLine As Long, lStartCol As Long
     Dim lEndLine As Long, lEndCol As Long
+    Dim lReplaceLine As Long
     Dim sLine As String, sMatch As String
     Dim sTemplate As String, sIndent As String
     Dim lMatchLength As Long
@@ -302,10 +302,11 @@ Private Function ProcessLine() As Boolean
         'match indentation when the template is multi-line
         sIndent = vbCrLf & IndentationToMatchLine(sLine)
         sTemplate = Replace(sTemplate, vbCrLf, sIndent)
+        lReplaceLine = lStartLine
 
         ProcessLine = GetNewSelection(sLine, sTemplate, lStartLine, lStartCol, lEndLine, lEndCol)
         sLine = sLine & sTemplate
-        Call oActiveCodePane.CodeModule.ReplaceLine(lStartLine, sLine)
+        Call oActiveCodePane.CodeModule.ReplaceLine(lReplaceLine, sLine)
         Call oActiveCodePane.SetSelection(lStartLine, lStartCol, lEndLine, lEndCol)
     End If
 End Function
@@ -313,10 +314,13 @@ End Function
 'if GetNewSelection returns true then we don't insert a space
 Private Function GetNewSelection(sLine As String, sTemplate As String, lStartLine As Long, lStartCol As Long, _
                                                                        lEndLine As Long, lEndCol As Long) As Boolean
-    Dim lLineLen        As Long
+    Dim lLinePos        As Long
+    Dim lLastLinePos    As Long
+    Dim lFirstLineNum   As Long
     Dim lSelStart       As Long
     Dim lSelEnd         As Long
     
+    lFirstLineNum = lStartLine
     lSelStart = InStr(1, sTemplate, "<sel>")
     If lSelStart = 0 Then 'if no selection is specified then just do something default
         GetNewSelection = False
@@ -331,14 +335,56 @@ Private Function GetNewSelection(sLine As String, sTemplate As String, lStartLin
         
     Else 'figure out where the selection is supposed to go
         GetNewSelection = True
+        sTemplate = Replace(sTemplate, "<sel>", "") 'remove the selection start token
+        
         lSelEnd = InStr(1, sTemplate, "</>")
-        lLineLen = InStr(1, sTemplate, vbCrLf)
-        If lLineLen = 0 Then 'single line template
+        sTemplate = Replace(sTemplate, "</>", "") 'remove the selection end token
+        
+        lLinePos = InStr(1, sTemplate, vbCrLf)
+        If lLinePos = 0 Then 'single line template
             lEndLine = lStartLine
             lStartCol = Len(sLine) + lSelStart
-            lEndCol = Len(sLine) + lSelEnd + 3 '+3 to move past the selection delim
-        Else
+            lEndCol = Len(sLine) + lSelEnd
             
+        Else
+            Dim sclipboardtext As String
+            
+            sclipboardtext = "-- sLine --" & vbCrLf & "[" & sLine & "]" & vbCrLf & "-- stemplate --" & vbCrLf & _
+                                    "[" & sTemplate & "]" & vbCrLf & _
+                                    "lSelStart, lSelEnd, lFirstLineNum " & lFirstLineNum & ", " & lSelStart & ", " & lSelEnd & vbCrLf
+
+            
+            lLastLinePos = lLinePos
+            Do While lLinePos < lSelStart
+                lLastLinePos = lLinePos
+                lLinePos = InStr(lLinePos + 1, sTemplate, vbCrLf)
+                lStartLine = lStartLine + 1
+            Loop
+            lStartCol = lSelStart
+            If lFirstLineNum = lStartLine Then lStartCol = lStartCol + Len(sLine) 'if the first linebreak is after `<sel>`
+            If lLastLinePos < lSelStart Then lStartCol = lStartCol - lLastLinePos - 1  'adjust the start col to be relative to beginning of line
+            
+            sclipboardtext = sclipboardtext & "lStartLine, lStartCol, lEndLine, lEndCol " & _
+                                    lStartLine & ", " & lStartCol & ", " & lEndLine & ", " & lEndCol & vbCrLf & _
+                                    "lLastLinePos, lLinePos " & lLastLinePos & ", " & lLinePos & vbCrLf
+
+            lEndLine = lStartLine
+            lLastLinePos = lLinePos
+            Do While lLastLinePos < lSelEnd
+                lLastLinePos = lLinePos
+                lLinePos = InStr(lLinePos + 1, sTemplate, vbCrLf)
+                lEndLine = lEndLine + 1
+            Loop
+            lEndCol = lSelEnd
+            If lLastLinePos < lSelEnd Then lEndCol = lEndCol - lLastLinePos
+            If lEndLine = lFirstLineNum Then lEndCol = lEndCol + Len(sLine)
+            
+            sclipboardtext = sclipboardtext & "lStartLine, lStartCol, lEndLine, lEndCol " & _
+                                    lStartLine & ", " & lStartCol & ", " & lEndLine & ", " & lEndCol & vbCrLf & _
+                                    "lLastLinePos, lLinePos " & lLastLinePos & ", " & lLinePos & vbCrLf
+            
+            
+            Call Clipboard.SetText(sclipboardtext)
         End If
         
     End If
