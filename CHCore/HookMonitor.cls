@@ -52,13 +52,13 @@ End Sub
 
 Sub KeyProc(bHandled As Boolean, lReturn As Long, wParam As Long, lParam As Long)
 On Error Resume Next
-    Dim plugin As ICHPlugin
+    Dim oPlugin As ICHPlugin
     
-    For Each plugin In mCHCore.Plugins
+    For Each oPlugin In mCHCore.Plugins
         
-        If plugin.Enabled Then
+        If oPlugin.Enabled Then
             If bHandled = False Then
-                plugin.OnKeyHook bHandled, lReturn, wParam, lParam
+                oPlugin.OnKeyHook bHandled, lReturn, wParam, lParam
                 
             End If
         End If
@@ -67,25 +67,25 @@ End Sub
 
 Sub CWPMSGProc(ByVal hwnd As Long, ByVal uMsg As Long, ByVal wParam As Long, ByVal lParam As Long)
 'On Error Resume Next
-    Dim plugin As ICHPlugin
+    Dim oPlugin As ICHPlugin
     Dim bHandled As Boolean, placeSubclass As Boolean, before As Boolean
-    For Each plugin In mCHCore.Plugins
+    For Each oPlugin In mCHCore.Plugins
         
-        If plugin.Enabled Then
+        If oPlugin.Enabled Then
             
             If bHandled = False Then
                 placeSubclass = False
                 before = False
-                plugin.OnWinProcHook hwnd, uMsg, wParam, lParam, bHandled, placeSubclass, before
+                oPlugin.OnWinProcHook hwnd, uMsg, wParam, lParam, bHandled, placeSubclass, before
                 
                 If placeSubclass Then
-                    Set m_SubClassPlugin = plugin
+                    Set m_SubClassPlugin = oPlugin
                     If before Then
                         SubclassThisWindowMsg hwnd, uMsg, MSG_BEFORE
                     Else
                         SubclassThisWindowMsg hwnd, uMsg, MSG_AFTER
                     End If
-                    Exit For 'currently only support one plugin per subclassed msg
+                    Exit For 'currently only support one oPlugin per subclassed msg
                 End If
             End If
         End If

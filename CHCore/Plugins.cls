@@ -20,8 +20,8 @@ Option Explicit
 'local variable to hold collection
 Private mCol As Collection
 
-Public Sub Add(ByVal plugin As CodeHelpDef.ICHPlugin)
-    mCol.Add plugin, plugin.Name
+Public Sub Add(ByVal oPlugin As CodeHelpDef.ICHPlugin)
+    Call mCol.Add(oPlugin, oPlugin.Name)
 End Sub
 
 Public Property Get Item(vntIndexKey As Variant) As ICHPlugin
@@ -34,7 +34,7 @@ Public Property Get Count() As Long
 End Property
 
 Public Sub Remove(vntIndexKey As Variant)
-    mCol.Remove vntIndexKey
+    Call mCol.Remove(vntIndexKey)
 End Sub
 
 Public Property Get NewEnum() As IUnknown

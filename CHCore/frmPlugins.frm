@@ -278,59 +278,63 @@ Attribute VB_Exposed = False
 Option Explicit
 
 Private m_Plugins As Plugins
+Private m_UpdateFromCode As Boolean
 
 Property Set Plugins(ByVal value As Plugins)
-    Dim plugin As ICHPlugin
+    Dim oPlugin As ICHPlugin
     Set m_Plugins = value
-    For Each plugin In m_Plugins
-        lstPlugin.AddItem plugin.Name
+    
+    For Each oPlugin In m_Plugins
+        Call lstPlugin.AddItem(oPlugin.Name)
     Next
+    
     If lstPlugin.ListCount > 0 Then lstPlugin.ListIndex = 0
 End Property
 
 Private Sub chkLoad_Click()
-    Dim plugin As ICHPlugin
-    Dim enabled As Boolean
-    On Error GoTo ERR_HANDLER
-    enabled = (chkLoad.value = vbChecked)
-    Set plugin = m_Plugins(lstPlugin.ListIndex + 1&)
-    plugin.enabled = enabled
+    Dim oPlugin As ICHPlugin
+    Dim Enabled As Boolean
     
-    If enabled Then
-        plugin.CHCore = gPtr
-        plugin.OnConnection ext_cm_AfterStartup, customVar
+    If m_UpdateFromCode Then Exit Sub
+    
+    On Error GoTo ERR_HANDLER
+    Enabled = (chkLoad.value = vbChecked)
+    Set oPlugin = m_Plugins(lstPlugin.ListIndex + 1&)
+    oPlugin.Enabled = Enabled
+    
+    If Enabled Then
+        oPlugin.CHCore = gPtr
+        Call oPlugin.OnConnection(ext_cm_AfterStartup, customVar)
     Else
-        plugin.OnDisconnect ext_dm_UserClosed, customVar
+        Call oPlugin.OnDisconnect(ext_dm_UserClosed, customVar)
     End If
     
-    SaveSetting "CodeHelp", plugin.Name, "Enabled", chkLoad.value
+    Call SaveSetting("CodeHelp", oPlugin.Name, "Enabled", oPlugin.Enabled)
 ERR_HANDLER:
-    
 End Sub
 
 Private Sub cmdHelp_Click()
-    Dim plugin As ICHPlugin
+    Dim oPlugin As ICHPlugin
     On Error GoTo ERR_HANDLER
     
-    Set plugin = m_Plugins(lstPlugin.ListIndex + 1&)
-    plugin.ShowHelp
+    Set oPlugin = m_Plugins(lstPlugin.ListIndex + 1&)
+    Call oPlugin.ShowHelp
 
 ERR_HANDLER:
 End Sub
 
 Private Sub cmdOK_Click()
-    Hide
+    Call Me.Hide
 End Sub
 
 Private Sub cmdProperties_Click()
-    Dim plugin As ICHPlugin
+    Dim oPlugin As ICHPlugin
     On Error GoTo ERR_HANDLER
     
-    Set plugin = m_Plugins(lstPlugin.ListIndex + 1&)
-    plugin.ShowPropertyDialog
+    Set oPlugin = m_Plugins(lstPlugin.ListIndex + 1&)
+    Call oPlugin.ShowPropertyDialog
     
 ERR_HANDLER:
-
 End Sub
 
 Private Sub Form_Unload(Cancel As Integer)
@@ -338,17 +342,19 @@ Private Sub Form_Unload(Cancel As Integer)
 End Sub
 
 Private Sub lstPlugin_Click()
-    Dim plugin As ICHPlugin
+    Dim oPlugin As ICHPlugin
     
-    Set plugin = m_Plugins(lstPlugin.ListIndex + 1&)
-    lblName.Caption = plugin.LongName
-    lblVersion.Caption = plugin.Version
-    lblCopyright.Caption = plugin.CopyRight
-    lblDesc.Caption = plugin.Description
+    Set oPlugin = m_Plugins(lstPlugin.ListIndex + 1&)
+    lblName.Caption = oPlugin.LongName
+    lblVersion.Caption = oPlugin.Version
+    lblCopyright.Caption = oPlugin.CopyRight
+    lblDesc.Caption = oPlugin.Description
     
-    chkLoad.enabled = True
-    chkLoad.value = CLng(GetSetting("CodeHelp", plugin.Name, "Enabled", vbChecked))
+    m_UpdateFromCode = True
+    chkLoad.Enabled = True
+    chkLoad.value = IIf(oPlugin.Enabled, vbChecked, vbUnchecked)
+    m_UpdateFromCode = False
     
-    cmdHelp.enabled = plugin.HaveExtendedHelp
-    cmdProperties.enabled = plugin.HaveProperties
+    cmdHelp.Enabled = oPlugin.HaveExtendedHelp
+    cmdProperties.Enabled = oPlugin.HaveProperties
 End Sub

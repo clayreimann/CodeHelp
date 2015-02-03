@@ -5,11 +5,14 @@ Public Declare Function GetProcAddress Lib "kernel32.dll" (ByVal hModule As Long
 
 'Public vars
 Public HookMon As HookMonitor
+
 'For crash prevention on Win98
 Public lockSubclass As cSubclass
-'for passing to manual plugin connect/disconnect, not used but need to be pass along
+
+'for passing to manual oPlugin connect/disconnect, not used but need to be pass along
 Public customVar() As Variant
-'this is a pointer to Connect object, we'll need it when we re-enable a plugin at runtime
+
+'this is a pointer to Connect object, we'll need it when we re-enable a oPlugin at runtime
 Public gPtr As Long
 
 Private m_Plugins               As Plugins

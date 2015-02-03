@@ -1,11 +1,11 @@
 VERSION 5.00
 Begin {AC0714F6-3D04-11D1-AE7D-00A0C90F26F4} Connect 
-   ClientHeight    =   8490
+   ClientHeight    =   12765
    ClientLeft      =   1740
    ClientTop       =   1545
-   ClientWidth     =   13350
-   _ExtentX        =   23548
-   _ExtentY        =   14975
+   ClientWidth     =   18000
+   _ExtentX        =   31750
+   _ExtentY        =   22516
    _Version        =   393216
    Description     =   "CodeHelp Core IDE Extender Framework"
    DisplayName     =   "CodeHelp IDE Extender"
@@ -23,23 +23,24 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = True
 Option Explicit
 
-Private m_VBE                   As VBIDE.VBE
-Private cbarCodeHelp            As CommandBarControl
+Private m_CHCommandBarItem      As CommandBarControl
+Private m_CHCoreMenuGroup       As CommandBarControl
 Private WithEvents ctlAbout     As CommandBarEvents
 Attribute ctlAbout.VB_VarHelpID = -1
 Private WithEvents ctlPlugins   As CommandBarEvents
 Attribute ctlPlugins.VB_VarHelpID = -1
-Private coreGroup               As CommandBarControl
+
+Private m_VBE                   As VBIDE.VBE
 Private m_AddInInst             As Object
+
 Implements ICHCore
 
 '------------------------------------------------------
 'this method adds the Add-In to VB
 '------------------------------------------------------
 Private Sub AddinInstance_OnConnection(ByVal Application As Object, ByVal ConnectMode As AddInDesignerObjects.ext_ConnectMode, ByVal AddInInst As Object, custom() As Variant)
-    On Error GoTo error_handler
     Dim cmdNew As CommandBarControl
-    Dim plugin As ICHPlugin
+    Dim oPlugin As ICHPlugin
     
     'save the vb instance
     Set m_VBE = Application
@@ -47,11 +48,11 @@ Private Sub AddinInstance_OnConnection(ByVal Application As Object, ByVal Connec
     
     'Use index for International Version of VB, thanks bicio!
     Dim menuBar As CommandBar
-        
-    Set menuBar = m_VBE.CommandBars(1)
-    Set cbarCodeHelp = menuBar.Controls.Add(msoControlPopup, , , menuBar.Controls.Count - 1)
     
-    cbarCodeHelp.Caption = "&CodeHelp"
+    On Error GoTo GeneralError
+    Set menuBar = m_VBE.CommandBars(1)
+    Set m_CHCommandBarItem = menuBar.Controls.Add(msoControlPopup, , , menuBar.Controls.Count - 1)
+    m_CHCommandBarItem.Caption = "&CodeHelp"
     
     Set cmdNew = AddMenuItem("&Plugins Manager...", , False)
     Set ctlPlugins = m_VBE.Events.CommandBarEvents(cmdNew)
@@ -59,24 +60,29 @@ Private Sub AddinInstance_OnConnection(ByVal Application As Object, ByVal Connec
     Set cmdNew = AddMenuItem("&About...", , False)
     Set ctlAbout = m_VBE.Events.CommandBarEvents(cmdNew)
     
-    LoadPlugins ConnectMode, custom
+    Call LoadPlugins(ConnectMode, custom)
     'start low level message monitoring
     Set HookMon = New HookMonitor
-    HookMon.StartMonitor
+    Call HookMon.StartMonitor
     
     'tell plugins we're ready
-    For Each plugin In mCHCore.Plugins
-        If plugin.enabled Then
-            plugin.OnConnection ConnectMode, custom
+    For Each oPlugin In mCHCore.Plugins
+        If oPlugin.Enabled Then
+            On Error GoTo PluginConnectFailed
+            Call oPlugin.OnConnection(ConnectMode, custom)
+            GoTo NextPlugin
+PluginConnectFailed:
+            Call MsgBox("Error enabling oPlugin: " & oPlugin.Name & " in file " & Err.Source & " on line: " & Erl & vbCrLf _
+                        & Err.Description, vbInformation, "Couldn't connect oPlugin")
+NextPlugin:
         End If
     Next
+    
     customVar = custom
     Exit Sub
     
-error_handler:
-    
-    MsgBox Err.Description, vbInformation, "Error Encountered"
-    
+GeneralError:
+    Call MsgBox(Err.Description, vbInformation, "Error Encountered")
 End Sub
 
 '------------------------------------------------------
@@ -85,79 +91,72 @@ End Sub
 Private Sub AddinInstance_OnDisconnection(ByVal RemoveMode As AddInDesignerObjects.ext_DisconnectMode, custom() As Variant)
     On Error Resume Next
     
-    EndMonitor
-    RemovePlugins RemoveMode, custom
+    Call EndMonitor
+    Call RemovePlugins(RemoveMode, custom)
     
-    Set coreGroup = Nothing
+    Set m_CHCoreMenuGroup = Nothing
     Set ctlAbout = Nothing
     Set ctlPlugins = Nothing
-    cbarCodeHelp.Delete
-    Set cbarCodeHelp = Nothing
+    Call m_CHCommandBarItem.Delete
+    Set m_CHCommandBarItem = Nothing
     
     Set m_VBE = Nothing
 End Sub
 
 Private Sub ctlAbout_Click(ByVal CommandBarControl As Object, handled As Boolean, CancelDefault As Boolean)
-    frmAbout.Show vbModal
+    Call frmAbout.Show(vbModal)
 End Sub
 
 Private Sub ctlPlugins_Click(ByVal CommandBarControl As Object, handled As Boolean, CancelDefault As Boolean)
     Dim f As frmPlugins
+    
     Set f = New frmPlugins
     Set f.Plugins = mCHCore.Plugins
-    f.Show vbModal
-    Unload f
+    
+    Call f.Show(vbModal)
+    Call Unload(f)
+    
     Set f = Nothing
 End Sub
 
 
-
-Private Function AddMenuItem(ByVal Caption As String, _
-    Optional ByVal iconPic As stdole.Picture = Nothing, _
-    Optional aboveSeparator As Boolean = True) As CommandBarControl
+Private Function AddMenuItem(ByVal Caption As String, Optional ByVal iconPic As stdole.Picture = Nothing, Optional aboveSeparator As Boolean = True) As CommandBarControl
+    Dim dropDown As CommandBarPopup
+    Dim newButton As CommandBarButton
+    Dim iconBmp As StdPicture
     
-    If Not cbarCodeHelp Is Nothing Then
-        Dim dropDown As CommandBarPopup
-        Dim newButton As CommandBarButton
-        Dim iconBmp As StdPicture
+    If m_CHCommandBarItem Is Nothing Then Exit Function
          
-        Set dropDown = cbarCodeHelp
-        
-        If aboveSeparator Then
-            'add menu item above the menuseparator
-            Set newButton = dropDown.Controls.Add(msoControlButton, , , coreGroup.Index)
-        
-        Else
-            
-            'add menu item below the separator
-            Set newButton = dropDown.Controls.Add(msoControlButton)
-            If coreGroup Is Nothing Then
-                'add separator
-                Set coreGroup = newButton
-                coreGroup.BeginGroup = True
-            End If
-            
+    Set dropDown = m_CHCommandBarItem
+    If aboveSeparator Then 'add menu item above the menuseparator
+        Set newButton = dropDown.Controls.Add(msoControlButton, , , m_CHCoreMenuGroup.Index)
+    
+    Else 'add menu item below the separator
+        Set newButton = dropDown.Controls.Add(msoControlButton)
+        If m_CHCoreMenuGroup Is Nothing Then
+            Set m_CHCoreMenuGroup = newButton
+            m_CHCoreMenuGroup.BeginGroup = True 'add separator
         End If
         
-        newButton.Caption = Caption
-                
-        If Not iconPic Is Nothing Then
-
-On Error GoTo SKIP_FACE
-            
-            Clipboard.Clear
-            newButton.CopyFace
-            Set iconBmp = Clipboard.GetData
-            
-            CopyIconToClipBoardAsBmp iconPic, iconBmp
-
-            newButton.PasteFace
-            Clipboard.Clear
-SKIP_FACE:
-        End If
-        
-        Set AddMenuItem = newButton
     End If
+    
+    newButton.Caption = Caption
+            
+    If Not iconPic Is Nothing Then
+        On Error GoTo SKIP_FACE
+        Call Clipboard.Clear
+        
+        Call newButton.CopyFace
+        Set iconBmp = Clipboard.GetData
+        Call CopyIconToClipBoardAsBmp(iconPic, iconBmp)
+        Call newButton.PasteFace
+        
+        Call Clipboard.Clear
+    End If
+    
+SKIP_FACE:
+    Set AddMenuItem = newButton
+
 End Function
 
 Private Property Get ICHCore_AddInInst() As Object
@@ -173,7 +172,7 @@ Private Property Get ICHCore_VBE() As VBIDE.VBE
 End Property
 
 Private Sub EndMonitor()
-    HookMon.EndMonitor
+    Call HookMon.EndMonitor
     Set HookMon = Nothing
 End Sub
 
@@ -186,7 +185,7 @@ Private Sub LoadPlugins(ByVal ConnectMode As AddInDesignerObjects.ext_ConnectMod
     sFile = Dir(sPath & "*.dll")
     Do While Len(sFile) > 0
         sFile = sPath & sFile
-        LoadPluginDLL sFile, ConnectMode, custom
+        Call LoadPluginDLL(sFile, ConnectMode, custom)
         sFile = Dir()
     Loop
 End Sub
@@ -202,54 +201,52 @@ Private Sub LoadPluginDLL(ByVal fileName As String, ByVal ConnectMode As ext_Con
     Dim ccI As CoClassInfo
     Dim inf As InterfaceInfo
     
-    Dim plugin As ICHPlugin
+    Dim oPlugin As ICHPlugin
     Dim className As String
     
     On Error Resume Next
     gPtr = ObjPtr(Me)
     
     Set tliApp = New TLIApplication
-    
     Set tliInfo = tliApp.TypeLibInfoFromFile(fileName)
         
     For Each ccI In tliInfo.CoClasses
         For Each inf In ccI.Interfaces
+            'more than one class in the dll can implement ICHPlugin
             If inf.Guid = GUID_ID Then
                 'this class implements ICHPlugin
                 className = tliInfo.Name & "." & ccI.Name
-                Set plugin = CreateObject(className)
+                Set oPlugin = CreateObject(className)
                 
-                If Not plugin Is Nothing Then
+                If Not oPlugin Is Nothing Then
+                    oPlugin.CHCore = gPtr
+                    oPlugin.Enabled = CBool(GetSetting("CodeHelp", oPlugin.Name, "Enabled", True))
+                    Call mCHCore.Plugins.Add(oPlugin)
                     
-                    plugin.CHCore = gPtr
-                    plugin.enabled = (CLng(GetSetting("CodeHelp", plugin.Name, "Enabled", vbChecked)) = vbChecked)
-                    
-                    mCHCore.Plugins.Add plugin
-                    Set plugin = Nothing
+                    Set oPlugin = Nothing
                 End If
                 
                 Exit For
             End If
         Next
-        'continue in case there are more than one class that implements ICHPlugin
     Next
     
 End Sub
 
 Private Sub RemovePlugins(ByVal RemoveMode As AddInDesignerObjects.ext_DisconnectMode, custom() As Variant)
-    Dim plugin As ICHPlugin
-    Dim pList As Plugins
-    Dim i As Long
+    Dim oPlugin As ICHPlugin
+    Dim oPluginList As Plugins
+    Dim idx As Long
     
-    Set pList = mCHCore.Plugins
+    Set oPluginList = mCHCore.Plugins
     
-    For Each plugin In pList
-        plugin.OnDisconnect RemoveMode, custom
+    For Each oPlugin In oPluginList
+        Call oPlugin.OnDisconnect(RemoveMode, custom)
     Next
     
-    'Delete plugin from collection
-    For i = 1 To pList.Count
-        pList.Remove 1
+    'Delete oPlugin from collection
+    For idx = 1 To oPluginList.Count
+        Call oPluginList.Remove(1)
     Next
     
     Set mCHCore.Plugins = Nothing
